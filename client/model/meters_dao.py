@@ -1,10 +1,4 @@
-from .main_dao import MainDAO
-import urllib.request
-import urllib.error
-import urllib.parse
-import json
-import pprint
-from config.api_key import API_KEY
+from main_dao import MainDAO
 
 
 class MetersDAO(MainDAO):
@@ -29,20 +23,29 @@ class MetersDAO(MainDAO):
         self.conn.commit()
         return row
 
-    def verify_kwh_meter_date_time_exists(self, meter, date, time):
+    def insert_temp(self, temperature, humidity, city):
         cursor = self.conn.cursor()
-        query = 'select "Meter" from "kWhTotal" where "Meter" = %s and "Date" = %s and "Time" = %s;'
-        cursor.execute(query, (meter, date, time))
+        query = 'insert into "Temp" ("Temperature", "Humidity", "City")' \
+                'values (%s, %s, %s) returning "Temperature", "Humidity", "City";'
+        cursor.execute(query, (temperature, humidity, city,))
+        row = cursor.fetchone()
+        self.conn.commit()
+        return row
+
+    def verify_kwh_meter_date_time_exists(self, meter, date, time, kwh_tot):
+        cursor = self.conn.cursor()
+        query = 'select "Meter" from "kWhTotal" where "Meter" = %s and "Date" = %s and "Time" = %s and "kWh_Tot" = %s;'
+        cursor.execute(query, (meter, date, time, kwh_tot))
         row = cursor.fetchone()
         if not row:
             return False
         else:
             return True
 
-    def verify_kw_meter_date_time_already_exists(self, meter, date, time):
+    def verify_kw_meter_date_time_already_exists(self, meter, date, time, watts):
         cursor = self.conn.cursor()
-        query = 'select "Meter" from "kW" where "Meter" = %s and "Date" = %s and "Time" = %s;'
-        cursor.execute(query, (meter, date, time))
+        query = 'select "Meter" from "kW" where "Meter" = %s and "Date" = %s and "Time" = %s and "Watts" = %s;'
+        cursor.execute(query, (meter, date, time, watts))
         row = cursor.fetchone()
         if not row:
             return False
@@ -63,10 +66,9 @@ class MetersDAO(MainDAO):
 
     def retrieve_meter_kwh_by_week(self, meter, week_date):
         cursor = self.conn.cursor()
-        query = """
-        SELECT "Date", MAX("kWh_Tot") FROM "kWhTotal" 
-        WHERE "Meter" = %s AND "Date" in (""" + week_date + """) group by "Date" ORDER BY "Date"
-        """
+        query = """ select "Date", MAX("kWh_Tot") from "kWhTotal" 
+                where "Meter" = %s and "Date" in (""" + week_date + """) group by "Date" order by "Date"
+                """
 
         # query = 'select "Date", max("kWh_Tot") from "kWhTotal" where "Meter" = %s and' \
         #         ' "Date" in %s' \
@@ -80,6 +82,29 @@ class MetersDAO(MainDAO):
         cursor = self.conn.cursor()
         query = 'select * from "kW" where "Meter" = %s and "Date" = %s'
         cursor.execute(query, (meter, day,))
+        row = cursor.fetchall()
+        self.conn.commit()
+        return row
+
+    def retrieve_temp_by_day(self, meter, day):
+        cursor = self.conn.cursor()
+        query = """select "Date", AVG("Temperature")::numeric(10,2) as Temp, AVG("Humidity")::numeric(10,2) as Humidity
+                from "sites" s inner join "Temp" t on s."City" = t."City"
+                where s."Meter" = %s and "Date" = %s group by "Date"
+                """
+        cursor.execute(query, (meter, day,))
+        row = cursor.fetchall()
+        self.conn.commit()
+        return row
+
+    def retrieve_temp_by_week(self, meter, week_date):
+        cursor = self.conn.cursor()
+        query = """select "Date", AVG("Temperature")::numeric(10,2) as Temp, AVG("Humidity")::numeric(10,2) as Humidity
+                from "sites" s inner join "Temp" t on s."City" = t."City"
+                where s."Meter" = %s and "Date" in (""" + week_date + """) and s."City" is not null
+                group by "Date"
+                """
+        cursor.execute(query, (meter, week_date,))
         row = cursor.fetchall()
         self.conn.commit()
         return row

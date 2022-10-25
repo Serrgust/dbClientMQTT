@@ -1,10 +1,9 @@
-import sys
 import paho.mqtt.client as mqtt
 import json
-import time
+import threading
 from handlers.meters import Meters
 
-broker_url = "192.168.4.133"
+broker_url = "broker.hivemq.com"
 broker_port = 1883
 
 username = 'admin'
@@ -17,7 +16,20 @@ def subscriptions(client):
     mqtt_topic = [
         ("spBv1.0/DB_Request/DDATA/EDGE/Request", 0),
         ("meter/kw", 0),
-        ("meter/kwh", 0)
+        ("meter/kwh", 0),
+        ("sites/temp", 0),
+        ("meter/#", 0)
+        # ("meter/31413", 0),
+        # ("meter/31428", 0),
+        # ("meter/32011", 0),
+        # ("meter/34955", 0),
+        # ("meter/34956", 0),
+        # ("meter/34972", 0),
+        # ("meter/34984", 0),
+        # ("meter/34998", 0),
+        # ("meter/36006", 0),
+        # ("meter/39602", 0),
+        # ("meter/39611", 0),
     ]
     client.subscribe(mqtt_topic)
 
@@ -32,6 +44,18 @@ def on_kw_message(client, userdata, msg):
     # print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
     json_msg = json.loads(msg.payload.decode())
     Meters().insert_kw(json_msg)
+
+
+def on_meter_message(client, userdata, msg):
+    print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+    json_msg = json.loads(msg.payload.decode())
+    Meters().insert_meter(json_msg)
+
+
+def on_temp_message(client, userdata, msg):
+    print(f"Received `{msg.payload.decode()}` from `{msg.topic}` topic")
+    json_msg = json.loads(msg.payload.decode())
+    Meters().insert_temp(json_msg)
 
 
 # def on_meter_date_message(client, userdata, msg):
@@ -99,12 +123,34 @@ def connect_mqtt():
 
 def run():
     client = connect_mqtt()
+    kw_callback = threading.Thread(target=client.message_callback_add("meter/kw", on_kw_message), daemon=True)
+    kwh_callback = threading.Thread(target=client.message_callback_add("meter/kwh", on_kwh_message), daemon=True)
+    temp_callback = threading.Thread(target=client.message_callback_add, args=("sites/temp", on_temp_message), daemon=True)
+    meter_callback = threading.Thread(target=client.message_callback_add, args=("meter/#", on_meter_message, ), daemon=True)
+    request_callback = threading.Thread(target=client.message_callback_add, args=("spBv1.0/DB_Request/DDATA/EDGE/Request", on_meter_request_message, ), daemon=True)
+    request_callback.start()
+    temp_callback.start()
+    meter_callback.start()
     try:
         while True:
-            client.message_callback_add("spBv1.0/DB_Request/DDATA/EDGE/Request", on_meter_request_message)
-            client.message_callback_add("meter/kw", on_kw_message)
-            client.message_callback_add("meter/kwh", on_kwh_message)
-            client.loop_forever()
+            #    kw_callback.start()
+            #    kwh_callback.start()
+            #      client.message_callback_add("meter/31413", on_kw_message)
+            #      client.message_callback_add("meter/31428", on_kwh_message)
+            #      client.message_callback_add("meter/#", on_meter_message)
+
+            #      client.message_callback_add("meter/31413", on_meter_message)
+            #      client.message_callback_add("meter/31428", on_meter_message)
+            #      client.message_callback_add("meter/32011", on_meter_message)
+            #      client.message_callback_add("meter/34955", on_meter_message)
+            #      client.message_callback_add("meter/34956", on_meter_message)
+            #      client.message_callback_add("meter/34972", on_meter_message)
+            #      client.message_callback_add("meter/34984", on_meter_message)
+            #      client.message_callback_add("meter/34998", on_meter_message)
+            #      client.message_callback_add("meter/36006", on_meter_message)
+            #      client.message_callback_add("meter/39602", on_meter_message)
+            #      client.message_callback_add("meter/39611", on_meter_message)
+            client.loop_start()
     except KeyboardInterrupt:
         print("Ending")
 

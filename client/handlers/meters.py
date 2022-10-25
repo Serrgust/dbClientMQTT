@@ -1,13 +1,4 @@
-import json
-import time
-
-from sqlalchemy.exc import IntegrityError
-from psycopg2.errors import UniqueViolation
-
-from flask import jsonify
-
-from model.meters_dao import MetersDAO
-from werkzeug.exceptions import BadRequest
+from client.model.meters_dao import MetersDAO
 
 
 def build_temp_dict(self, readings):
@@ -66,6 +57,37 @@ class Meters:
             print("Meter: " + Meter + " kW has not updated")
         return
 
+    def insert_meter(self, received_json):
+        dao = MetersDAO()
+        Meter = str(received_json['Meter'])
+        Date = str(received_json['Date'])
+        Time = str(received_json['Time'])
+        Watts = str(received_json['RMS_Watts_Tot'])
+        kWh_Tot = str(received_json['kWh_Tot'])
+        Good = str(received_json['Good'])
+        if Good == "1" and not dao.verify_kw_meter_date_time_already_exists(Meter, Date, Time,
+                                                                            Watts) and not dao.verify_kwh_meter_date_time_exists(
+                Meter, Date, Time, kWh_Tot):
+            row = dao.insert_kw(Meter, Date, Time, Watts, Good)
+            print("Inserted kW of Meter: " + row[0])
+            # if not dao.verify_kwh_meter_date_time_exists(Meter, Date, Time, kWh_Tot):
+            row = dao.insert_kwh(Meter, Date, Time, kWh_Tot, Good)
+            print("Inserted kWh of Meter: " + row[0])
+        else:
+            print("Meter: " + Meter + " has not updated")
+        # elif dao.verify_kwh_meter_date_time_exists(Meter, Date, Time):
+        #    print("Meter: " + Meter + " kWh has not updated")
+        return
+
+    def insert_temp(self, received_json):
+        dao = MetersDAO()
+        Temp = str(received_json['Temp'])
+        Humidity = str(received_json['Humidity'])
+        City = str(received_json['City'])
+        row = dao.insert_temp(Temp, Humidity, City)
+        print("Inserted Temp: " + str(row[0]) + " of City: " + str(row[2]))
+        return
+
     def retrieve_meter_kwh_by_date(self, received_json):
         dao = MetersDAO()
         print(received_json)
@@ -119,7 +141,8 @@ class Meters:
     def retrieve_meter_kw_day(self, meter, day):
         dao = MetersDAO()
         retrieved_list = dao.retrieve_meter_kw_day(meter, day)
-        result_list = []
+        avg_temp = dao.retrieve_temp_by_day(meter, day)
+        result_list = [avg_temp]
         print(retrieved_list)
         for x in retrieved_list:
             new_dict = {
@@ -136,7 +159,7 @@ class Meters:
         dao = MetersDAO()
         retrieved_list = dao.retrieve_meter_kwh_by_week(meter, days)
         result_list = []
-        #print(retrieved_list)
+        # print(retrieved_list)
         for x in retrieved_list:
             new_dict = {
                 "Date": x[0],
@@ -148,8 +171,6 @@ class Meters:
 
     def retrieve_meter_info(self, received_str):
         x = received_str.split(",")
-        a = x[0]
-        b = x[1]
         meter = x[0]
         if len(x) == 2:
             day = x[1]
@@ -160,9 +181,9 @@ class Meters:
             x.pop(0)
             days = " "
             new_days = days.join(x)
-          #  print(meter + " Days: " + new_days)
+            #  print(meter + " Days: " + new_days)
             new_days = new_days.replace(" ", ",")
-          #  print(new_days)
+            #  print(new_days)
             new_days = new_days.split(',')
             my_list = []
             for i in range(len(new_days)):
