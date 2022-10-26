@@ -1,39 +1,37 @@
 from client.model.meters_dao import MetersDAO
 
 
-def build_temp_dict(self, readings):
-    return {
-        'Temp': readings['main']['temp'],
-        'Humidity': readings['main']['humidity'],
-        'City': readings['name'],
-        'Country': readings['sys']['country'],
-        'Weather Condition': readings['weather'][0]['main'] + ' -' + readings['weather'][0]['description'],
-    }
-
-
-def build_insert_kwh_dict(self, readings):
-    new_dict = {
-        'Meter': int(readings['Meter']),
-        'Time': readings['ReadData'][0]['Time'],
-        'Date': readings['ReadData'][0]['Date'],
-        'Time_Stamp_UTC_ms': readings['ReadData'][0]['Time_Stamp_UTC_ms'],
-        'kWh_Tot': float(),
-        'RMS_Watts_Tot': int(),
-        'Good': int(readings['ReadData'][0]['Good'])
-    }
-    if 'kWh_Tot' in readings['ReadData'][0]:
-        new_dict.update({'kWh_Tot': float(readings['ReadData'][0]['kWh_Tot'])}),
-        new_dict.update({'RMS_Watts_Tot': int(readings['ReadData'][0]['RMS_Watts_Tot'])})
-    return new_dict
-
-
 class Meters:
+
+    def build_temp_dict(self, readings):
+        return {
+            'Temp': readings['main']['temp'],
+            'Humidity': readings['main']['humidity'],
+            'Clouds': readings['clouds']['all'],
+            'City': readings['name'],
+            'Country': readings['sys']['country'],
+            'Weather Condition': readings['weather'][0]['main'] + ' -' + readings['weather'][0]['description'],
+        }
+
+    def build_insert_kwh_dict(self, readings):
+        new_dict = {
+            'Meter': int(readings['Meter']),
+            'Time': readings['ReadData'][0]['Time'],
+            'Date': readings['ReadData'][0]['Date'],
+            'Time_Stamp_UTC_ms': readings['ReadData'][0]['Time_Stamp_UTC_ms'],
+            'kWh_Tot': float(),
+            'RMS_Watts_Tot': int(),
+            'Good': int(readings['ReadData'][0]['Good'])
+        }
+        if 'kWh_Tot' in readings['ReadData'][0]:
+            new_dict.update({'kWh_Tot': float(readings['ReadData'][0]['kWh_Tot'])}),
+            new_dict.update({'RMS_Watts_Tot': int(readings['ReadData'][0]['RMS_Watts_Tot'])})
+        return new_dict
 
     def insert_kwh(self, received_json):
         dao = MetersDAO()
         Meter = str(received_json['Meter'])
         Date = str(received_json['Date'])
-        Time = str(received_json['Time'])
         kWh_Tot = str(received_json['kWh_Tot'])
         Good = str(received_json['Good'])
         if not dao.verify_kwh_meter_date_time_exists(Meter, Date, Time):
@@ -67,7 +65,7 @@ class Meters:
         Good = str(received_json['Good'])
         if Good == "1" and not dao.verify_kw_meter_date_time_already_exists(Meter, Date, Time,
                                                                             Watts) and not dao.verify_kwh_meter_date_time_exists(
-                Meter, Date, Time, kWh_Tot):
+            Meter, Date, Time, kWh_Tot):
             row = dao.insert_kw(Meter, Date, Time, Watts, Good)
             print("Inserted kW of Meter: " + row[0])
             # if not dao.verify_kwh_meter_date_time_exists(Meter, Date, Time, kWh_Tot):
@@ -81,10 +79,13 @@ class Meters:
 
     def insert_temp(self, received_json):
         dao = MetersDAO()
-        Temp = str(received_json['Temp'])
-        Humidity = str(received_json['Humidity'])
-        City = str(received_json['City'])
-        row = dao.insert_temp(Temp, Humidity, City)
+        # Temp = str(received_json['Temp'])
+        # Humidity = str(received_json['Humidity'])
+        # City = str(received_json['City'])
+        print(received_json)
+      #  temp_dict = self.build_temp_dict(received_json)
+        row = dao.insert_temp(received_json.get("Temp"), received_json.get("Humidity"), received_json.get("Clouds"),
+                              received_json.get("City"), received_json.get("Weather Condition"))
         print("Inserted Temp: " + str(row[0]) + " of City: " + str(row[2]))
         return
 
@@ -142,7 +143,16 @@ class Meters:
         dao = MetersDAO()
         retrieved_list = dao.retrieve_meter_kw_day(meter, day)
         avg_temp = dao.retrieve_temp_by_day(meter, day)
-        result_list = [avg_temp]
+        print(type(avg_temp))
+        print(len(avg_temp))
+        result_list = []
+        if len(avg_temp) != 0 and avg_temp[0][0] is not None and avg_temp[0][2] is not None:
+            temp_dict = {
+                "Avg Temp": float(avg_temp[0][0]),
+                "Avg Hum": float(avg_temp[0][1]),
+                "Avg Clouds": float(avg_temp[0][2])
+            }
+            result_list = [temp_dict]
         print(retrieved_list)
         for x in retrieved_list:
             new_dict = {
@@ -160,6 +170,17 @@ class Meters:
         retrieved_list = dao.retrieve_meter_kwh_by_week(meter, days)
         result_list = []
         # print(retrieved_list)
+        avg_temp = dao.retrieve_temp_by_week(meter, days)
+        print(type(avg_temp))
+        print(len(avg_temp))
+        result_list = []
+        if len(avg_temp) != 0 and avg_temp[0][0] is not None and avg_temp[0][2] is not None:
+            temp_dict = {
+                "Avg Temp": float(avg_temp[0][0]),
+                "Avg Hum": float(avg_temp[0][1]),
+                "Avg Clouds": float(avg_temp[0][2])
+            }
+            result_list = [temp_dict]
         for x in retrieved_list:
             new_dict = {
                 "Date": x[0],

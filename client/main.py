@@ -3,7 +3,7 @@ import json
 import threading
 from handlers.meters import Meters
 
-broker_url = "broker.hivemq.com"
+broker_url = "192.168.4.133"
 broker_port = 1883
 
 username = 'admin'

@@ -1,6 +1,8 @@
 import psycopg2
-from config.db_config import db_credentials
+
 from datetime import datetime
+
+from client.config.db_config import db_credentials
 
 
 class MainDAO:
@@ -10,5 +12,5 @@ class MainDAO:
                                                                               db_credentials['password'],
                                                                               db_credentials['dbport'],
                                                                               db_credentials['host'])
-      #  print("connection url:  ", connection_url)
+        #  print("connection url:  ", connection_url)
         self.conn = psycopg2.connect(connection_url)

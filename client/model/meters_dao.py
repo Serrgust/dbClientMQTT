@@ -1,4 +1,4 @@
-from main_dao import MainDAO
+from .main_dao import MainDAO
 
 
 class MetersDAO(MainDAO):
@@ -23,11 +23,11 @@ class MetersDAO(MainDAO):
         self.conn.commit()
         return row
 
-    def insert_temp(self, temperature, humidity, city):
+    def insert_temp(self, temperature, humidity, clouds, city, weather_condition):
         cursor = self.conn.cursor()
-        query = 'insert into "Temp" ("Temperature", "Humidity", "City")' \
-                'values (%s, %s, %s) returning "Temperature", "Humidity", "City";'
-        cursor.execute(query, (temperature, humidity, city,))
+        query = 'insert into "Temp" ("Temperature", "Humidity", "Clouds", "City", "Weather Condition")' \
+                'values (%s, %s, %s, %s, %s) returning "Temperature", "Humidity", "Clouds", "City", "Weather Condition";'
+        cursor.execute(query, (temperature, humidity, clouds, city, weather_condition))
         row = cursor.fetchone()
         self.conn.commit()
         return row
@@ -44,7 +44,7 @@ class MetersDAO(MainDAO):
 
     def verify_kw_meter_date_time_already_exists(self, meter, date, time, watts):
         cursor = self.conn.cursor()
-        query = 'select "Meter" from "kW" where "Meter" = %s and "Date" = %s and "Time" = %s and "Watts" = %s;'
+        query = 'select "Meter" from "kW" where "Meter" = %s and "Date" = %s and "Time" = %s and "Watts" = %s ;'
         cursor.execute(query, (meter, date, time, watts))
         row = cursor.fetchone()
         if not row:
@@ -55,10 +55,10 @@ class MetersDAO(MainDAO):
     def retrieve_meter_kwh_by_date(self, meter, start_date, end_date):
         cursor = self.conn.cursor()
         if end_date is None:
-            query = 'select * from "kWhTotal" where "Meter" = %s and "Date" >= %s'
+            query = 'select * from "kWhTotal" where "Meter" = %s and "Date" >= %s order by "Date" DESC, "Time" DESC'
             cursor.execute(query, (meter, start_date))
         else:
-            query = 'select * from "kWhTotal" where "Meter" = %s and "Date" between %s and %s'
+            query = 'select * from "kWhTotal" where "Meter" = %s and "Date" between %s and %s order by "Date" DESC, "Time" DESC'
             cursor.execute(query, (meter, start_date, end_date))
         row = cursor.fetchall()
         self.conn.commit()
@@ -80,7 +80,7 @@ class MetersDAO(MainDAO):
 
     def retrieve_meter_kw_day(self, meter, day):
         cursor = self.conn.cursor()
-        query = 'select * from "kW" where "Meter" = %s and "Date" = %s'
+        query = 'select * from "kW" where "Meter" = %s and "Date" = %s order by "Time" '
         cursor.execute(query, (meter, day,))
         row = cursor.fetchall()
         self.conn.commit()
@@ -88,9 +88,9 @@ class MetersDAO(MainDAO):
 
     def retrieve_temp_by_day(self, meter, day):
         cursor = self.conn.cursor()
-        query = """select "Date", AVG("Temperature")::numeric(10,2) as Temp, AVG("Humidity")::numeric(10,2) as Humidity
+        query = """select AVG("Temperature")::numeric(10,2) as Temp, AVG("Humidity")::numeric(10,2) as Humidity, AVG("Clouds")::numeric(10,2) as Clouds
                 from "sites" s inner join "Temp" t on s."City" = t."City"
-                where s."Meter" = %s and "Date" = %s group by "Date"
+                where s."Meter" = %s and "Date" = %s group by "Date" 
                 """
         cursor.execute(query, (meter, day,))
         row = cursor.fetchall()
@@ -99,12 +99,11 @@ class MetersDAO(MainDAO):
 
     def retrieve_temp_by_week(self, meter, week_date):
         cursor = self.conn.cursor()
-        query = """select "Date", AVG("Temperature")::numeric(10,2) as Temp, AVG("Humidity")::numeric(10,2) as Humidity
+        query = """select AVG("Temperature")::numeric(10,2) as Temp, AVG("Humidity")::numeric(10,2) as Humidity, AVG("Clouds")::numeric(10,2) as Clouds
                 from "sites" s inner join "Temp" t on s."City" = t."City"
                 where s."Meter" = %s and "Date" in (""" + week_date + """) and s."City" is not null
-                group by "Date"
                 """
-        cursor.execute(query, (meter, week_date,))
+        cursor.execute(query, (meter,))
         row = cursor.fetchall()
         self.conn.commit()
         return row
