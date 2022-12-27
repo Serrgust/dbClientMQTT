@@ -23,11 +23,11 @@ class MetersDAO(MainDAO):
         self.conn.commit()
         return row
 
-    def insert_temp(self, temperature, humidity, clouds, city, weather_condition):
+    def insert_temp(self, temperature, humidity, clouds, city, ):
         cursor = self.conn.cursor()
-        query = 'insert into "Temp" ("Temperature", "Humidity", "Clouds", "City", "Weather Condition")' \
-                'values (%s, %s, %s, %s, %s) returning "Temperature", "Humidity", "Clouds", "City", "Weather Condition";'
-        cursor.execute(query, (temperature, humidity, clouds, city, weather_condition))
+        query = 'insert into "Temp" ("Temperature", "Humidity", "Clouds", "City")' \
+                'values (%s, %s, %s, %s) returning "Temperature", "Humidity", "Clouds", "City";'
+        cursor.execute(query, (temperature, humidity, clouds, city, ))
         row = cursor.fetchone()
         self.conn.commit()
         return row
@@ -66,8 +66,9 @@ class MetersDAO(MainDAO):
 
     def retrieve_meter_kwh_by_week(self, meter, week_date):
         cursor = self.conn.cursor()
-        query = """ select "Date", MAX("kWh_Tot") from "kWhTotal" 
-                where "Meter" = %s and "Date" in (""" + week_date + """) group by "Date" order by "Date"
+        query = """select "Date", ROUND((MAX("kWh_Tot")) - (MIN("kWh_Tot"))) from "kWhTotal"
+                where "Meter" = %s and "Date" in (""" + week_date + """)
+                group by "Date" order by "Date"
                 """
 
         # query = 'select "Date", max("kWh_Tot") from "kWhTotal" where "Meter" = %s and' \

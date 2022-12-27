@@ -28,32 +28,32 @@ class Meters:
             new_dict.update({'RMS_Watts_Tot': int(readings['ReadData'][0]['RMS_Watts_Tot'])})
         return new_dict
 
-    def insert_kwh(self, received_json):
-        dao = MetersDAO()
-        Meter = str(received_json['Meter'])
-        Date = str(received_json['Date'])
-        kWh_Tot = str(received_json['kWh_Tot'])
-        Good = str(received_json['Good'])
-        if not dao.verify_kwh_meter_date_time_exists(Meter, Date, Time):
-            row = dao.insert_kwh(Meter, Date, Time, kWh_Tot, Good)
-            print("Inserted kWh of Meter: " + row[0])
-        elif dao.verify_kwh_meter_date_time_exists(Meter, Date, Time):
-            print("Meter: " + Meter + " kWh has not updated")
-        return
-
-    def insert_kw(self, received_json):
-        dao = MetersDAO()
-        Meter = str(received_json['Meter'])
-        Date = str(received_json['Date'])
-        Time = str(received_json['Time'])
-        Watts = str(received_json['RMS_Watts_Tot'])
-        Good = str(received_json['Good'])
-        if not dao.verify_kw_meter_date_time_already_exists(Meter, Date, Time):
-            row = dao.insert_kw(Meter, Date, Time, Watts, Good)
-            print("Inserted kW of Meter: " + row[0])
-        else:
-            print("Meter: " + Meter + " kW has not updated")
-        return
+    # def insert_kwh(self, received_json):
+    #     dao = MetersDAO()
+    #     Meter = str(received_json['Meter'])
+    #     Date = str(received_json['Date'])
+    #     kWh_Tot = str(received_json['kWh_Tot'])
+    #     Good = str(received_json['Good'])
+    #     if not dao.verify_kwh_meter_date_time_exists(Meter, Date, Time):
+    #         row = dao.insert_kwh(Meter, Date, Time, kWh_Tot, Good)
+    #         print("Inserted kWh of Meter: " + row[0])
+    #     elif dao.verify_kwh_meter_date_time_exists(Meter, Date, Time):
+    #         print("Meter: " + Meter + " kWh has not updated")
+    #     return
+    #
+    # def insert_kw(self, received_json):
+    #     dao = MetersDAO()
+    #     Meter = str(received_json['Meter'])
+    #     Date = str(received_json['Date'])
+    #     Time = str(received_json['Time'])
+    #     Watts = str(received_json['RMS_Watts_Tot'])
+    #     Good = str(received_json['Good'])
+    #     if not dao.verify_kw_meter_date_time_already_exists(Meter, Date, Time):
+    #         row = dao.insert_kw(Meter, Date, Time, Watts, Good)
+    #         print("Inserted kW of Meter: " + row[0])
+    #     else:
+    #         print("Meter: " + Meter + " kW has not updated")
+    #     return
 
     def insert_meter(self, received_json):
         dao = MetersDAO()
@@ -83,10 +83,10 @@ class Meters:
         # Humidity = str(received_json['Humidity'])
         # City = str(received_json['City'])
         print(received_json)
-      #  temp_dict = self.build_temp_dict(received_json)
+        #  temp_dict = self.build_temp_dict(received_json)
         row = dao.insert_temp(received_json.get("Temp"), received_json.get("Humidity"), received_json.get("Clouds"),
-                              received_json.get("City"), received_json.get("Weather Condition"))
-        print("Inserted Temp: " + str(row[0]) + " of City: " + str(row[2]))
+                              received_json.get("City"), )  # received_json.get("Weather Condition")
+        print("Inserted Temp: " + str(row[0]) + " of City: " + str(row[3]))
         return
 
     def retrieve_meter_kwh_by_date(self, received_json):

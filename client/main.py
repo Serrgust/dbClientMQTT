@@ -2,14 +2,21 @@ import paho.mqtt.client as mqtt
 import json
 import threading
 from handlers.meters import Meters
+import base64
 
-broker_url = "192.168.4.133"
+
+broker_url = "broker.hivemq.com"
 broker_port = 1883
 
 username = 'admin'
 password = '1234'
 mqtt.Client.connected_flag = False  # create flag in class
 flag_connected = 0
+
+pic_topic = "image/image"
+pic_filename = "D:/Dump/motion-snap.jpg"
+vid_topic = "video/video"
+vid_filename = "C:/Users/Gustavo Serrano/Downloads/videoplayback.mp4"
 
 
 def subscriptions(client):
@@ -18,7 +25,8 @@ def subscriptions(client):
         ("meter/kw", 0),
         ("meter/kwh", 0),
         ("sites/temp", 0),
-        ("meter/#", 0)
+        ("meter/#", 0),
+        ("image/image", 0)
         # ("meter/31413", 0),
         # ("meter/31428", 0),
         # ("meter/32011", 0),
@@ -87,6 +95,15 @@ def on_meter_request_message(client, userdata, msg):
     client.publish("history/kwh", str(kwh_data))
 
 
+def on_image_message(client, userdata, message):
+    print("Receiving message")
+    print(message.topic)
+    decoded_data = base64.b64decode((message.payload.decode()))
+    img_file = open('image.mp4', 'wb')
+    img_file.write(decoded_data)
+    img_file.close()
+
+
 def connect_mqtt():
     def on_disconnect(client, userdata, rc):
         global flag_connected
@@ -125,12 +142,19 @@ def run():
     client = connect_mqtt()
     kw_callback = threading.Thread(target=client.message_callback_add("meter/kw", on_kw_message), daemon=True)
     kwh_callback = threading.Thread(target=client.message_callback_add("meter/kwh", on_kwh_message), daemon=True)
-    temp_callback = threading.Thread(target=client.message_callback_add, args=("sites/temp", on_temp_message), daemon=True)
-    meter_callback = threading.Thread(target=client.message_callback_add, args=("meter/#", on_meter_message, ), daemon=True)
-    request_callback = threading.Thread(target=client.message_callback_add, args=("spBv1.0/DB_Request/DDATA/EDGE/Request", on_meter_request_message, ), daemon=True)
+    temp_callback = threading.Thread(target=client.message_callback_add, args=("sites/temp", on_temp_message),
+                                     daemon=True)
+    meter_callback = threading.Thread(target=client.message_callback_add, args=("meter/#", on_meter_message,),
+                                      daemon=True)
+    request_callback = threading.Thread(target=client.message_callback_add,
+                                        args=("spBv1.0/DB_Request/DDATA/EDGE/Request", on_meter_request_message,),
+                                        daemon=True)
+    video_callback = threading.Thread(target=client.message_callback_add, args=("image/image", on_image_message,),
+                                      daemon=True)
     request_callback.start()
     temp_callback.start()
     meter_callback.start()
+    video_callback.start()
     try:
         while True:
             #    kw_callback.start()
