@@ -57,10 +57,14 @@ class Meters:
 
     def insert_meter(self, received_json):
         dao = MetersDAO()
+        print(received_json)
         Meter = str(received_json['Meter'])
         Date = str(received_json['Date'])
         Time = str(received_json['Time'])
-        Watts = str(received_json['RMS_Watts_Tot'])
+        if received_json.get('RMS_Watts_Tot'):
+            Watts = str(received_json['RMS_Watts_Tot'])
+        else:
+            Watts = "0"
         kWh_Tot = str(received_json['kWh_Tot'])
         Good = str(received_json['Good'])
         if Good == "1" and not dao.verify_kw_meter_date_time_already_exists(Meter, Date, Time,

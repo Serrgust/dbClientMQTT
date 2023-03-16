@@ -5,7 +5,7 @@ from handlers.meters import Meters
 import base64
 
 
-broker_url = "broker.hivemq.com"
+broker_url = "192.168.4.133"
 broker_port = 1883
 
 username = 'admin'
@@ -26,7 +26,7 @@ def subscriptions(client):
         ("meter/kwh", 0),
         ("sites/temp", 0),
         ("meter/#", 0),
-        ("image/image", 0)
+        # ("image/image", 0)
         # ("meter/31413", 0),
         # ("meter/31428", 0),
         # ("meter/32011", 0),
@@ -91,7 +91,7 @@ def on_meter_request_message(client, userdata, msg):
     fixed_json = json.loads(s)
     values = fixed_json['metrics'][0]['value']
     kwh_data = Meters().retrieve_meter_info(str(values))
-    # print(kwh_data)
+    print(kwh_data)
     client.publish("history/kwh", str(kwh_data))
 
 
@@ -154,15 +154,16 @@ def run():
     request_callback.start()
     temp_callback.start()
     meter_callback.start()
-    video_callback.start()
+    kw_callback.start()
+    kwh_callback.start()
+    #video_callback.start()
     try:
         while True:
-            #    kw_callback.start()
-            #    kwh_callback.start()
+            #      kw_callback.start()
+            #      kwh_callback.start()
             #      client.message_callback_add("meter/31413", on_kw_message)
             #      client.message_callback_add("meter/31428", on_kwh_message)
             #      client.message_callback_add("meter/#", on_meter_message)
-
             #      client.message_callback_add("meter/31413", on_meter_message)
             #      client.message_callback_add("meter/31428", on_meter_message)
             #      client.message_callback_add("meter/32011", on_meter_message)

@@ -1,5 +1,5 @@
 db_credentials = {
-    'host': 'database-billgenwebapp.corp7agqahhj.us-east-1.rds.amazonaws.com',
+    'host': 'restoredbackup-billgenwebapp.corp7agqahhj.us-east-1.rds.amazonaws.com',
     'user': 'postgres',
     'password': 'Au3Wb8hZNHvm8s',
     'dbname': 'postgres',
